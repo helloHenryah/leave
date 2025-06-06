@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册表单</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+
+        input[type="text"],
+        input[type="datetime-local"],
+        input[type="password"],
+        textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .radio-group {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .radio-group label {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>注册表单</h2>
+    <form id="registerForm" enctype="multipart/form-data">
+        <label for="name">姓名:</label>
+        <input type="text" id="name" name="name" required><br><br>
+
+        <label>性别:</label>
+        <div class="radio-group">
+            <input type="radio" id="男" name="sex" value="男" required checked>
+            <label for="男">男</label>
+
+            <input type="radio" id="女" name="sex" value="女" required>
+            <label for="女">女</label>
+        </div>
+        <br><br>
+
+        <label for="student_id">学号:</label>
+        <input type="text" id="student_id" name="student_id" required><br><br>
+
+        <label for="password">密码:</label>
+        <input type="password" id="password" name="password" required><br><br>
+
+        <label for="phone">手机号:</label>
+        <input type="text" id="phone" name="phone" required><br><br>
+
+        <label for="parent_name">家长姓名:</label>
+        <input type="text" id="parent_name" name="parent_name" required><br><br>
+
+        <label for="parent_phone">家长手机号:</label>
+        <input type="text" id="parent_phone" name="parent_phone" required><br><br>
+
+        <label for="dormitory_id">宿舍号:</label>
+        <input type="text" id="dormitory_id" name="dormitory_id" required><br><br>
+
+        <label for="teacher_name">教师姓名</label>
+        <input type="text" id="teacher_name" name="teacher_name" required ><br><br>
+
+        <label for="teacher_id">教师ID:</label>
+        <input type="text" id="teacher_id" name="teacher_id" required ><br><br>
+
+        <label for="img">上传图片:</label>
+        <input type="file" id="img" name="img" accept="image/*" required><br><br>
+
+        <button type="submit">提交</button>
+    </form>
+    <hr/>
+    <button onclick="window.location.href='/login'">已注册用户点击登录</button>
+</div>
+<script>
+
+
+    document.getElementById('registerForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        const formData = new FormData(this);
+
+        fetch('/api/register', {
+            method: 'POST',
+            body: formData,
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.redirect) {
+                    window.location.href = '/';
+                    localStorage.removeItem('student_id');
+                    localStorage.setItem('student_id', data.student_id);
+                } else if (data.error) {
+                    alert('注册失败: ' + data.error);
+                    console.error('Error:', data.error);
+                } else {
+                    alert('注册成功!');
+                    console.log('Success:');
+                }
+            })
+            .catch((error) => {
+                alert('注册失败，请重试!');
+                console.error('Error:', error);
+            });
+    });
+</script>
+</body>
+</html>

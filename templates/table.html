@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>table表单</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+
+        thead {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #e0e0e0;
+        }
+
+        #table-container p {
+            color: #333;
+            font-size: 16px;
+        }
+
+        #table-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* 按钮样式 */
+        #action-btn {
+            background-color: #4CAF50; /* Green */
+            color: white;
+            padding: 6px 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 12px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        #action-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+<div id="table-container"></div>
+<script>
+
+    window.onload = function () {
+
+        const allowedKeys = ["ID", "name", "student_id"]; // 你已有的允许显示的字段
+
+        fetch("/api/user")
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.data[0]);
+
+                let table = document.createElement('table');
+
+                // 创建表头
+                let thead = document.createElement('thead');
+                let headerRow = document.createElement('tr');
+
+                // 添加原有的表头字段
+                Object.keys(data.data[0]).forEach(key => {
+                    if (allowedKeys.includes(key)) {
+                        let th = document.createElement('th');
+                        th.textContent = key;
+                        headerRow.appendChild(th);
+                    }
+                });
+
+                // 添加操作列的表头
+                let actionTh = document.createElement('th');
+                actionTh.textContent = "操作";
+                headerRow.appendChild(actionTh);
+
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+
+                // 创建表格主体
+                let tbody = document.createElement('tbody');
+
+                data.data.forEach(item => {
+                    if (typeof item === 'object' && item !== null) {
+                        let row = document.createElement('tr');
+
+                        // 添加正常字段
+                        Object.entries(item).forEach(([key, value]) => {
+                            if (allowedKeys.includes(key)) {
+                                let cell = document.createElement('td');
+                                cell.textContent = value;
+                                row.appendChild(cell);
+                            }
+                        });
+
+                        // 新增操作列：按钮
+                        let actionCell = document.createElement('td');
+                        let btn = document.createElement('button');
+                        btn.textContent = "点击"; // 或者“编辑”、“删除”等
+                        btn.className = "action-btn"; // 可以加上 CSS 类用于样式控制
+
+                        // 绑定点击事件
+                        btn.addEventListener('click', function () {
+                            // 这里可以访问整行的数据 item
+                            console.log("按钮被点击了，对应的数据是：", item);
+                            // 示例：跳转到详情页
+                            localStorage.setItem("student_id", item.student_id);
+
+                            window.location.href = "/";
+                        });
+
+                        actionCell.appendChild(btn);
+                        row.appendChild(actionCell); // 把按钮列加入这一行
+
+                        tbody.appendChild(row);
+                    } else {
+                        console.warn("跳过非对象数据:", item);
+                    }
+                });
+
+                table.appendChild(tbody);
+                document.getElementById('table-container').appendChild(table);
+            })
+            .catch(error => console.error('Error fetching data: ', error));
+    };
+</script>
+</body>
+
+</html>
