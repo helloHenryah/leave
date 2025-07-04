@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v3"
@@ -9,32 +10,27 @@ import (
 	"os"
 )
 
-type config struct {
-	Port int    `yaml:"port"`
-	Dsn  string `yaml:"dsn"`
-}
+//go:embed templates/*
+var TemplateFS embed.FS
 
-var c config
+func main() {
 
-func init() {
-	file, err := os.Open("config.yaml")
+	file, err := os.Open("setting.yaml")
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	var m map[string]string
 	bytes, err := io.ReadAll(file)
 	if err != nil {
 		panic(err)
 	}
-	err = yaml.Unmarshal(bytes, &c)
-}
+	err = yaml.Unmarshal(bytes, &m)
+	file.Close()
 
-func main() {
-	api.InitDb(c.Dsn)
-	gin.SetMode(gin.ReleaseMode)
+	api.InitDb(m["Dsn"])
 	r := gin.Default()
-	api.InitApi(r)
-	err := r.Run(fmt.Sprintf(":%d", c.Port))
+	api.InitApi(r, TemplateFS)
+	err = r.Run(fmt.Sprintf(":%s", m["Port"]))
 	if err != nil {
 		panic(err)
 	}
