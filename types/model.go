@@ -28,4 +28,5 @@ type Submit struct {
 	TripMode     string `json:"trip_mode" form:"trip_mode"`
 	WhereTo      string `json:"where_to" form:"where_to"`
 	ReviewTime   string `json:"review_time" form:"review_time"`
+	Action       string `json:"action" form:"action"`
 }

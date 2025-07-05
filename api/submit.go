@@ -9,7 +9,6 @@ import (
 	"html/template"
 	"leave/types"
 	"log"
-	"os"
 	"strings"
 	"time"
 )
@@ -111,8 +110,12 @@ func (a *Api) Submit(c *gin.Context) {
 		data["where_to"] = "学校"
 	}
 	data["trip_mode"] = submit.TripMode
-	c.HTML(200, "index_out.html", data)
-	//a.Template(c, data)
+	//c.HTML(200, "index_out.html", data)
+	if submit.Action == "html" {
+		c.HTML(200, "index_out", data)
+	} else if submit.Action == "image" {
+		a.Template(c, data)
+	}
 }
 
 func (a *Api) Template(c *gin.Context, data map[string]string) {
@@ -177,9 +180,9 @@ func fullScreenshot(htmlContent string) []byte {
 		chromedp.Tasks{chromedp.FullScreenshot(&buf, 100)}); err != nil {
 		log.Fatal(err)
 	}
-	if err := os.WriteFile("fullScreenshot.png", buf, 0o644); err != nil {
-		log.Fatal(err)
-	}
+	//if err := os.WriteFile("fullScreenshot.png", buf, 0o644); err != nil {
+	//	log.Fatal(err)
+	//}
 
 	log.Printf("wrote elementScreenshot.png and fullScreenshot.png")
 	return buf
