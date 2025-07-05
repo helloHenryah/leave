@@ -2,3 +2,5 @@
 /bin/
 .idea/
 /upload/
+go.mod
+go.sum

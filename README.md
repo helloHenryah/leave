@@ -3,6 +3,7 @@
 默认连接的是postgres数据库
 1.安装依赖
 ```bash
+go mod init leave
 go mod tidy
 ```
 
