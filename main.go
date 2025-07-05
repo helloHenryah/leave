@@ -19,7 +19,6 @@ func main() {
 
 	port := os.Getenv("LEAVE_APP_PORT")
 	if type_ == "" {
-		type_ = "sqlite"
 		log.Println("use default db type sqlite")
 	}
 	if port == "" {

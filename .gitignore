@@ -4,3 +4,4 @@
 /upload/
 go.mod
 go.sum
+makefile
