@@ -4,9 +4,8 @@ import (
 	"embed"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"gopkg.in/yaml.v3"
-	"io"
 	"leave/api"
+	"log"
 	"os"
 )
 
@@ -15,23 +14,26 @@ var TemplateFS embed.FS
 
 func main() {
 
-	file, err := os.Open("setting.yaml")
-	if err != nil {
-		panic(err)
-	}
-	var m map[string]string
-	bytes, err := io.ReadAll(file)
-	if err != nil {
-		panic(err)
-	}
-	err = yaml.Unmarshal(bytes, &m)
-	file.Close()
+	dsn := os.Getenv("LEAVE_APP_DB_DSN")
+	type_ := os.Getenv("LEAVE_APP_DB_TYPE")
 
-	api.InitDb(m["Dsn"])
+	port := os.Getenv("LEAVE_APP_PORT")
+	if type_ == "" {
+		type_ = "sqlite"
+		log.Println("use default db type sqlite")
+	}
+	if port == "" {
+		port = "8080"
+		log.Println("use default port 8080")
+	}
+	err := api.InitDb(dsn, type_)
+	if err != nil {
+		panic("init db err" + err.Error())
+	}
 	r := gin.Default()
 	api.InitApi(r, TemplateFS)
-	err = r.Run(fmt.Sprintf(":%s", m["Port"]))
+	err = r.Run(fmt.Sprintf(":%s", port))
 	if err != nil {
-		panic(err)
+		panic("init port err" + err.Error())
 	}
 }
