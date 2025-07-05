@@ -19,10 +19,10 @@ func InitDb(dsn string, type_ string) (err error) {
 	case "postgres", "pgsql":
 		db, err = gorm.Open(postgres.Open(dsn))
 	case "sqlite", "sqlite3":
-		db, err = gorm.Open(sqlite.Open(dsn + ".db"))
+		db, err = gorm.Open(sqlite.Open(dsn))
 	default:
 		if dsn != "" {
-			db, err = gorm.Open(sqlite.Open(dsn + ".db"))
+			db, err = gorm.Open(sqlite.Open(dsn))
 		} else {
 			db, err = gorm.Open(sqlite.Open("file.db"))
 		}
