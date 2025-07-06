@@ -23,6 +23,5 @@ type SubmitRespItem struct {
 	ParentName  string `json:"parent_name" gorm:"column:parent_name"`
 	ParentPhone string `json:"parent_phone" gorm:"column:parent_phone"`
 	DormitoryID string `json:"dormitory_id" gorm:"column:dormitory_id"`
-	TeacherID   string `json:"teacher_id" gorm:"column:teacher_id"`
 	TeacherName string `json:"teacher_name" gorm:"column:teacher_name"`
 }

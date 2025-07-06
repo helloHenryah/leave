@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>请假申请表</title>
+    <title>请假申请表v1.2</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -59,17 +60,16 @@
             background-color: #0056b3;
         }
 
-
-
         .radio-group label {
             margin-left: 10px;
         }
     </style>
 </head>
+
 <body>
 <div class="container">
     <h1>请假申请表</h1>
-    <form action="/api/submit" method="POST" onsubmit="onclick(event)">
+    <form action="/api/submit" method="POST" id="form" name="form">
 
         <label for="student_id">学号:</label>
         <input type="text" id="student_id" name="student_id" required><br><br>
@@ -89,14 +89,12 @@
         <label for="lesson">课程:</label>
         <input type="text" id="lesson" name="lesson" required><br><br>
 
-
-
         <!-- 请假原因 -->
         <label for="information">请假原因:</label>
         <input type="text" id="information" name="information" required><br><br>
         <!-- 请假类型 -->
         <label for="leave_type">请选择请假类型:</label>
-        <select name="leave_type" id="leave_type"  onchange="toggleFields()">
+        <select name="leave_type" id="leave_type" onchange="toggleFields()">
             <option value="leave_in">校内</option>
             <option value="leave_out">校外</option>
         </select>
@@ -104,12 +102,11 @@
         <!-- 去向 -->
         <div style="display: none;" id="details">
             <label for="where_to">详细去处:</label>
-            <input type="text" id="where_to" name="where_to" ><br><br>
+            <input type="text" id="where_to" name="where_to"><br><br>
 
             <label for="trip_mode">交通工具:</label>
             <input type="text" id="trip_mode" name="trip_mode"><br><br>
         </div>
-
 
         <!-- 审核时间 -->
         <label for="review_time">审核时间:</label>
@@ -124,18 +121,19 @@
         <br>
 
         <!-- 提交按钮 -->
-        <button type="submit" >提交</button>
+        <button type="submit" id="submitBtn">提交</button>
+        <div id="loading" style="display:none;">正在提交，请稍候...</div>
 
     </form>
     <hr/>
     <button onclick="window.location.href='/register'">未注册用户点击注册</button>
 </div>
+<!-- ... existing code ... -->
+<!-- ... existing code ... -->
 <script>
-
     function toggleFields() {
         let leaveType = document.getElementById("leave_type").value;
         let detailsDiv = document.getElementById("details");
-        console.log(leaveType, detailsDiv);
 
         if (leaveType === "leave_out") {
             detailsDiv.style.display = "block";
@@ -170,7 +168,7 @@
         const startTime = new Date();
         const endTime = new Date();
 
-        if (currentHour >= 17 && currentHour >= 40) {
+        if (currentHour >= 17) {
             // 17:40以后，设置为第二天早上
             startTime.setDate(startTime.getDate() + 1);
             endTime.setDate(endTime.getDate() + 1);
@@ -193,45 +191,86 @@
         const reviewTime = new Date();
         document.getElementById('review_time').value = formatDateTime(reviewTime);
         const studentID = localStorage.getItem('student_id')
-        if(studentID && studentID.length > 0 && studentID !== 'undefined'){
+        if (studentID && studentID.length > 0 && studentID !== 'undefined') {
             document.getElementById('student_id').value = localStorage.getItem('student_id');
         }
     };
 
-    const onclick = (event) => {
-        event.preventDefault();
-        let item = localStorage.getItem('student_id');
-        if (item) {
-            document.getElementById('student_id').value = item;
+    document.getElementById('form').addEventListener('submit', function (event) {
+        event.preventDefault(); // 阻止默认提交行为
+
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+
+        // 禁用按钮并显示加载提示
+        submitBtn.disabled = true;
+        submitBtn.textContent = '提交中...';
+        loading.style.display = 'block';
+
+
+        const studentID = document.getElementById('student_id').value;
+        if (studentID) {
+            localStorage.setItem('student_id', studentID);
         } else {
-            alert('请先登录!');
+            alert('请填写学号');
+            return;
         }
-        console.log(window.innerWidth);
-        console.log(window.innerHeight)
+
+
         const formData = new FormData(this);
-        formData.append('width',''+window.innerWidth);
-        formData.append('height',''+window.innerHeight);
         fetch('/api/submit', {
             method: 'POST',
             body: formData,
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.redirect) {
-                    window.location.href = data.redirect;
-                } else if (data.error) {
-                    alert('注册失败: ' + data.error);
-                    console.error('Error:', data.error);
+        }).then(response => {
+            if (response.ok) {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('text/html')) {
+                    return response.text(); // 返回 HTML 文本
+                } else if (contentType && contentType.startsWith('image/')) {
+                    return response.blob(); // 图片数据
                 } else {
-                    alert('注册成功!');
-                    console.log('Success:');
+                    return response.json(); // JSON 数据
                 }
+            } else {
+                throw new Error('请求失败');
+            }
+        })
+            .then(async result => {
+                if (typeof result === 'string' && (result.trim().startsWith(`<!DOCTYPE`) || result.trim().startsWith(`<html`))) {
+                    const win = window.open('', '_blank');
+                    win.document.open();
+                    win.document.write(await result);
+                    win.document.close();
+
+                    alert('提交成功，HTML 页面已生成！');
+                } else if (result instanceof Blob) {
+                    const imageUrl = URL.createObjectURL(result);
+                    const a = document.createElement('a');
+                    a.href = imageUrl;
+                    a.download = '请假单.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(imageUrl);
+
+                    alert('提交成功，图片已开始下载！');
+                } else if (result.error) {
+                    alert('提交失败: ' + result.error);
+                }
+
+                submitBtn.disabled = false;
+                submitBtn.textContent = '提交';
+                loading.style.display = 'none';
             })
             .catch((error) => {
                 alert('注册失败，请重试!');
                 console.error('Error:', error);
             });
-    }
+
+    });
 </script>
+<!-- ... existing code ... -->
+
 </body>
+
 </html>

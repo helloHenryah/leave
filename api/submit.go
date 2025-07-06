@@ -16,8 +16,8 @@ import (
 func (a *Api) Submit(c *gin.Context) {
 	var submit = new(types.Submit)
 	if err := c.Bind(&submit); err != nil {
-		fmt.Println(err)
-		c.JSON(400, gin.H{"error": err.Error()})
+		log.Println(err)
+		c.JSON(200, gin.H{"error": err.Error()})
 		return
 	}
 	if submit.Lesson == "" {
@@ -31,47 +31,50 @@ func (a *Api) Submit(c *gin.Context) {
 	var user types.User
 	err := db.Where(&types.User{StudentID: submit.StudentID}).Last(&user).Error
 	if err != nil {
-		fmt.Println(err)
-		c.JSON(400, gin.H{"error": "用户不存在"})
+		log.Println(err)
+		c.JSON(200, gin.H{"error": "用户不存在"})
 		return
 	}
 	startTime, err := time.Parse("2006-01-02T15:04", submit.StartTime)
 	if err != nil {
-		fmt.Println(err, submit.StartTime)
-		c.JSON(400, gin.H{"error": "开始时间格式错误"})
+		log.Println(err, submit.StartTime)
+		c.JSON(200, gin.H{"error": "开始时间格式错误"})
 		return
 	}
 	endTime, err := time.Parse("2006-01-02T15:04", submit.EndTime)
 	if err != nil {
-		fmt.Println(err, submit.EndTime)
-		c.JSON(400, gin.H{"error": "结束时间格式错误"})
+		log.Println(err, submit.EndTime)
+		c.JSON(200, gin.H{"error": "结束时间格式错误"})
 		return
 	}
 
 	if startTime.After(endTime) {
-		c.JSON(400, gin.H{"error": "开始时间不能大于结束时间"})
+		log.Println("开始时间不能大于结束时间", submit.StartTime, submit.EndTime)
+		c.JSON(200, gin.H{"error": "开始时间不能大于结束时间"})
 		return
 	}
 
 	if endTime.Sub(startTime) > time.Hour*24 {
-		c.JSON(400, gin.H{"error": "请假时间不能超过24小时"})
+		log.Println("请假时间不能超过24小时", submit.StartTime, submit.EndTime)
+		c.JSON(200, gin.H{"error": "请假时间不能超过24小时"})
 		return
 	}
 
 	reviewTime, err := time.Parse("2006-01-02T15:04", submit.ReviewTime)
 	if err != nil {
-		fmt.Println(err, submit.ReviewTime)
-		c.JSON(400, gin.H{"error": "审批时间格式错误"})
+		log.Println(err, submit.ReviewTime)
+		c.JSON(200, gin.H{"error": "审批时间格式错误"})
 		return
 	}
 	approvalTime, err := time.Parse("2006-01-02T15:04", submit.ApprovalTime)
 	if err != nil {
-		fmt.Println(err, submit.ApprovalTime)
-		c.JSON(400, gin.H{"error": "编号时间格式错误"})
+		log.Println(err, submit.ApprovalTime)
+		c.JSON(200, gin.H{"error": "编号时间格式错误"})
 		return
 	}
 	if approvalTime.After(reviewTime) {
-		c.JSON(400, gin.H{"error": "审批时间不能大于编号时间"})
+		log.Println("编号时间不能大于审批时间", submit.ApprovalTime, submit.ReviewTime)
+		c.JSON(200, gin.H{"error": "审批时间不能大于编号时间"})
 		return
 	}
 
@@ -112,7 +115,7 @@ func (a *Api) Submit(c *gin.Context) {
 	data["trip_mode"] = submit.TripMode
 	//c.HTML(200, "index_out.html", data)
 	if submit.Action == "html" {
-		c.HTML(200, "index_out", data)
+		c.HTML(200, "index_out.html", data)
 	} else if submit.Action == "image" {
 		a.Template(c, data)
 	}
@@ -124,21 +127,21 @@ func (a *Api) Template(c *gin.Context, data map[string]string) {
 	filePath := "templates/index_out.html" // 替换为实际的文件路径
 	content, err := a.TemplateFS.ReadFile(filePath)
 	if err != nil {
-		fmt.Println("无法读取文件:", err)
+		log.Println("无法读取文件:", err)
 		c.JSON(500, gin.H{"error": "无法读取文件"})
 		return
 	}
 
 	tmpl, err := template.New("index").Parse(string(content))
 	if err != nil {
-		fmt.Println("解析模板失败:", err)
+		log.Println("解析模板失败:", err)
 		c.JSON(500, gin.H{"error": "解析模板失败"})
 		return
 	}
 
 	var htmlOutput strings.Builder
 	if err := tmpl.Execute(&htmlOutput, data); err != nil {
-		fmt.Println("渲染模板失败:", err)
+		log.Println("渲染模板失败:", err)
 		c.JSON(500, gin.H{"error": "渲染模板失败"})
 		return
 	}
