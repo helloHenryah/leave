@@ -5,7 +5,7 @@ run:
 	go run .
 
 linux:
-	go build -o ./bin/leave-linux-amd64 --ldflags="-s -w" .
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./bin/leave-linux-amd64 --ldflags="-s -w" .
 
 windows:
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ./bin/leave-windows-amd64.exe --ldflags="-s -w" .
