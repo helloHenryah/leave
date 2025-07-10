@@ -1,7 +1,9 @@
 package api
 
 import (
+	"context"
 	"embed"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"html/template"
 )
@@ -32,6 +34,28 @@ func InitApi(r *gin.Engine, fs embed.FS) {
 	})
 	api.GET("/table/submit", func(c *gin.Context) {
 		c.HTML(200, "table_submit.html", nil)
+	})
+
+	api.GET("/html/:id", func(c *gin.Context) {
+		c.HTML(200, "image.html", gin.H{"url": "/api/upload/" + c.Param("id")})
+	})
+	api.GET("/api/upload/:id", func(c *gin.Context) {
+		result, err := redisDB.Get(context.Background(), fmt.Sprintf("image_%s", c.Param("id"))).Result()
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+		c.Data(200, "image/png", []byte(result))
+	})
+	api.GET("/api/download/:id", func(c *gin.Context) {
+		result, err := redisDB.Get(context.Background(), fmt.Sprintf("image_%s", c.Param("id"))).Result()
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+		c.Header("Content-Disposition", "attachment; filename=病假条.png")
+		c.Header("Content-Type", "application/octet-stream")
+		c.Data(200, "image/png", []byte(result))
 	})
 	api.GET("/api/user", api.GetUserInfo)
 	api.GET("/api/submit", api.GetSubmitInfo)

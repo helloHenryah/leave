@@ -113,15 +113,26 @@ func (a *Api) Submit(c *gin.Context) {
 		data["where_to"] = "学校"
 	}
 	data["trip_mode"] = submit.TripMode
-	//c.HTML(200, "index_out.html", data)
 	if submit.Action == "html" {
 		c.HTML(200, "index_out.html", data)
-	} else if submit.Action == "image" {
-		a.Template(c, data)
+		return
 	}
+	//c.HTML(200, "index_out.html", data)
+	bytes := a.Template(c, data)
+	redisDB.Set(context.Background(), fmt.Sprintf("image_%s", submit.StudentID), string(bytes), time.Minute*5)
+	if submit.Action == "image" {
+		c.JSON(200, gin.H{
+			"url": "/html/" + submit.StudentID,
+		})
+	} else if submit.Action == "download" {
+		c.JSON(200, gin.H{
+			"url": "/api/download/" + submit.StudentID,
+		})
+	}
+
 }
 
-func (a *Api) Template(c *gin.Context, data map[string]string) {
+func (a *Api) Template(c *gin.Context, data map[string]string) []byte {
 
 	// 手动读取 HTML 文件并渲染模板
 	filePath := "templates/index_out.html" // 替换为实际的文件路径
@@ -129,31 +140,32 @@ func (a *Api) Template(c *gin.Context, data map[string]string) {
 	if err != nil {
 		log.Println("无法读取文件:", err)
 		c.JSON(500, gin.H{"error": "无法读取文件"})
-		return
+		return nil
 	}
 
 	tmpl, err := template.New("index").Parse(string(content))
 	if err != nil {
 		log.Println("解析模板失败:", err)
 		c.JSON(500, gin.H{"error": "解析模板失败"})
-		return
+		return nil
 	}
 
 	var htmlOutput strings.Builder
 	if err := tmpl.Execute(&htmlOutput, data); err != nil {
 		log.Println("渲染模板失败:", err)
 		c.JSON(500, gin.H{"error": "渲染模板失败"})
-		return
+		return nil
 	}
 	bytes := fullScreenshot(htmlOutput.String())
 	//c.Header("Cache-Control", "no-cache, no-store, must-revalidate") // HTTP 1.1.
 	//c.Header("Pragma", "no-cache")                                   // HTTP 1.0.
 	//c.Header("Expires", "0")                                         // Proxies.
-	c.Header("Content-Type", "image/png")
-	c.Header("Content-Length", fmt.Sprintf("%d", len(bytes)))
-	c.Header("Content-Disposition", "attachment; filename=fullScreenshot.png")
-
-	c.Writer.Write(bytes)
+	//c.Header("Content-Type", "image/png")
+	//c.Header("Content-Length", fmt.Sprintf("%d", len(bytes)))
+	//c.Header("Content-Disposition", "attachment; filename=fullScreenshot.png")
+	//
+	//c.Writer.Write(bytes)
+	return bytes
 }
 
 func fullScreenshot(htmlContent string) []byte {
@@ -161,9 +173,10 @@ func fullScreenshot(htmlContent string) []byte {
 	// 1. 创建有界面的浏览器选项
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		//chromedp.Flag("headless", false),
-		chromedp.Flag("start-maximized", true),
-		//chromedp.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"),
-		chromedp.WindowSize(400, 2300),
+		//chromedp.Flag("start-maximized", true),
+		chromedp.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"),
+		//chromedp.UserAgent("Mozilla/5.0 (Linux; Android 15; 24122RKC7C Build/AQ3A.240829.003) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.260 Mobile Safari/537.36"),
+		chromedp.WindowSize(400, 2200),
 	)
 	//chromedp.Flag("headless", false),
 	//chromedp.Flag("start-maximized", true),

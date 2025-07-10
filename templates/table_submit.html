@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>table表单</title>
+    <title>表格与分页</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -38,8 +38,14 @@
             background-color: #e0e0e0;
         }
 
-        #table-container p {
-            color: #333;
+        .pagination {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .pagination button {
+            margin: 0 5px;
+            padding: 8px 12px;
             font-size: 16px;
         }
 
@@ -69,64 +75,105 @@
 </head>
 <body>
 <div id="table-container"></div>
+
+<!-- 分页控件 -->
+<div class="pagination">
+    <button id="prev">上一页</button>
+    <span id="pageInfo"></span>
+    <button id="next">下一页</button>
+</div>
+
 <script>
+    let currentPage = 1;
+    const itemsPerPage = 10; // 每页显示的数据条数
 
-    window.onload = function () {
+    const allowedKeys = ["ID", "name", "student_id", "sex", "start_time", "end_time", "lesson", "teacher_name", "where_to", "leave_type"]; // 允许显示的字段
 
-        const allowedKeys = ["ID", "name", "student_id","sex","start_time","end_time","lesson","teacher_name","where_to","leave_type"]; // 你已有的允许显示的字段
+    function fetchData(page) {
+        const offset = (page - 1) * itemsPerPage;
 
-        fetch("/api/submit")
+        fetch(`/api/submit?page=${page}&limit=${itemsPerPage}`)
             .then(response => response.json())
             .then(data => {
-                console.log(data.data[0]);
-
-                let table = document.createElement('table');
-
-                // 创建表头
-                let thead = document.createElement('thead');
-                let headerRow = document.createElement('tr');
-
-                // 添加原有的表头字段
-                Object.keys(data.data[0]).forEach(key => {
-                    if (allowedKeys.includes(key)) {
-                        let th = document.createElement('th');
-                        th.textContent = key;
-                        headerRow.appendChild(th);
-                    }
-                });
-
-
-                thead.appendChild(headerRow);
-                table.appendChild(thead);
-
-                // 创建表格主体
-                let tbody = document.createElement('tbody');
-
-                data.data.forEach(item => {
-                    if (typeof item === 'object' && item !== null) {
-                        let row = document.createElement('tr');
-
-                        // 添加正常字段
-                        Object.entries(item).forEach(([key, value]) => {
-                            if (allowedKeys.includes(key)) {
-                                let cell = document.createElement('td');
-                                cell.textContent = value;
-                                row.appendChild(cell);
-                            }
-                        });
-
-                        tbody.appendChild(row);
-                    } else {
-                        console.warn("跳过非对象数据:", item);
-                    }
-                });
-
-                table.appendChild(tbody);
-                document.getElementById('table-container').appendChild(table);
+                updateTable(data.data);
+                updatePagination(data.total, page);
             })
-            .catch(error => console.error('Error fetching data: ', error));
+            .catch(error => console.error('Error fetching data:', error));
+    }
+
+    function updateTable(data) {
+        const container = document.getElementById('table-container');
+        container.innerHTML = ''; // 清空现有内容
+
+        let table = document.createElement('table');
+
+        // 创建表头
+        let thead = document.createElement('thead');
+        let headerRow = document.createElement('tr');
+
+        // 添加允许的字段作为表头
+        Object.keys(data[0]).forEach(key => {
+            if (allowedKeys.includes(key)) {
+                let th = document.createElement('th');
+                th.textContent = key;
+                headerRow.appendChild(th);
+            }
+        });
+
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        // 创建表格主体
+        let tbody = document.createElement('tbody');
+
+        data.forEach(item => {
+            if (typeof item === 'object' && item !== null) {
+                let row = document.createElement('tr');
+
+                // 添加正常字段
+                Object.entries(item).forEach(([key, value]) => {
+                    if (allowedKeys.includes(key)) {
+                        let cell = document.createElement('td');
+                        cell.textContent = value;
+                        row.appendChild(cell);
+                    }
+                });
+
+                tbody.appendChild(row);
+            } else {
+                console.warn("跳过非对象数据:", item);
+            }
+        });
+
+        table.appendChild(tbody);
+        container.appendChild(table);
+    }
+
+    function updatePagination(total, currentPage) {
+        const totalPages = Math.ceil(total / itemsPerPage);
+        const pageInfo = document.getElementById('pageInfo');
+        pageInfo.textContent = `第 ${currentPage} 页，共 ${totalPages} 页`;
+
+        document.getElementById('prev').disabled = currentPage === 1;
+        document.getElementById('next').disabled = currentPage === totalPages;
+    }
+
+    document.getElementById('prev').addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            fetchData(currentPage);
+        }
+    });
+
+    document.getElementById('next').addEventListener('click', () => {
+        currentPage++;
+        fetchData(currentPage);
+    });
+
+    // 初始加载第一页数据
+    window.onload = function () {
+        fetchData(currentPage);
     };
 </script>
 </body>
-
 </html>

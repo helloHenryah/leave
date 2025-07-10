@@ -63,6 +63,22 @@
         .radio-group label {
             margin-left: 10px;
         }
+
+        .download {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .download :hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 
@@ -87,11 +103,11 @@
 
         <!-- 课程 -->
         <label for="lesson">课程:</label>
-        <input type="text" id="lesson" name="lesson" required><br><br>
+        <input type="text" id="lesson" name="lesson" ><br><br>
 
         <!-- 请假原因 -->
         <label for="information">请假原因:</label>
-        <input type="text" id="information" name="information" required><br><br>
+        <input type="text" id="information" name="information" ><br><br>
         <!-- 请假类型 -->
         <label for="leave_type">请选择请假类型:</label>
         <select name="leave_type" id="leave_type" onchange="toggleFields()">
@@ -114,14 +130,16 @@
 
         <label for="action">生成销假单类型</label>
         <select id="action" name="action">
-            <option value="image">生成image长图(推荐苹果或小米用户)</option>
+            <option value="download">自动下载图片(推荐苹果或小米用户)</option>
             <option value="html">生成html页面(推荐其他手机用户)</option>
+            <option value="image">生成网页图片页面(推荐其他手机用户)</option>
         </select>
         <br>
         <br>
 
         <!-- 提交按钮 -->
         <button type="submit" id="submitBtn">提交</button>
+        <a href="/" id="download" style="display: none;" download="图片.png">没有调用自动下载?点击重新下载</a>
         <div id="loading" style="display:none;">正在提交，请稍候...</div>
 
     </form>
@@ -197,6 +215,13 @@
     };
 
     document.getElementById('form').addEventListener('submit', function (event) {
+        const action = document.getElementById('action').value;
+
+        // 如果选择的是 html 模式，使用原生表单提交以接收 HTML 页面
+        if (action === 'html') {
+            return; // 不阻止默认提交行为，让浏览器正常跳转
+        }
+
         event.preventDefault(); // 阻止默认提交行为
 
         const submitBtn = document.getElementById('submitBtn');
@@ -222,48 +247,25 @@
             method: 'POST',
             body: formData,
         }).then(response => {
-            if (response.ok) {
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('text/html')) {
-                    return response.text(); // 返回 HTML 文本
-                } else if (contentType && contentType.startsWith('image/')) {
-                    return response.blob(); // 图片数据
-                } else {
-                    return response.json(); // JSON 数据
-                }
-            } else {
-                throw new Error('请求失败');
+            if (action === 'image' || action === 'download') {
+                return response.json();
             }
         })
-            .then(async result => {
-                if (typeof result === 'string' && (result.trim().startsWith(`<!DOCTYPE`) || result.trim().startsWith(`<html`))) {
-                    const win = window.open('', '_blank');
-                    win.document.open();
-                    win.document.write(await result);
-                    win.document.close();
-
-                    alert('提交成功，HTML 页面已生成！');
-                } else if (result instanceof Blob) {
-                    const imageUrl = URL.createObjectURL(result);
-                    const a = document.createElement('a');
-                    a.href = imageUrl;
-                    a.download = '请假单.png';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(imageUrl);
-
-                    alert('提交成功，图片已开始下载！');
-                } else if (result.error) {
-                    alert('提交失败: ' + result.error);
+            .then((data) => {
+                if (action === 'download') {
+                    const download = document.getElementById('download');
+                    download.style.display = 'block';
+                    download.href = data.url;
+                    download.click();
+                } else if (action === 'image') {
+                    window.location.href = data.url;
                 }
-
+                loading.style.display = 'none';
                 submitBtn.disabled = false;
                 submitBtn.textContent = '提交';
-                loading.style.display = 'none';
             })
             .catch((error) => {
-                alert('注册失败，请重试!');
+                alert('提交失败，请联系管理员!' + error);
                 console.error('Error:', error);
             });
 
